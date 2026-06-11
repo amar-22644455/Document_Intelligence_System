@@ -13,22 +13,22 @@ rag_env\Scripts\activate.bat
 
 ---
 
-### 2. **Run Legal Dashboard Web Application (Recommended)**
+### 2. **Run RAG Document Intelligence Web Application (Recommended)**
 ```batch
-python -m uvicorn legal_dashboard:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn dashboard:app --reload --host 127.0.0.1 --port 8000
 ```
 
-**Purpose:** Launches a high-fidelity Legal Risk Analysis AI dashboard
+**Purpose:** Launches the RAG-Based Document Intelligence dashboard
 - Allows document upload (PDF, TXT, PNG, JPG, etc.)
-- Provides an analysis window with legal risk highlights (red/yellow)
-- Provides an AI chatbot with risk summary scoring (1-100)
+- Provides an insights window with extracted findings and highlights
+- Provides an AI chatbot for question answering and cross-document comparisons
 - Web interface runs at: http://localhost:8000
 
 **Example:**
 ```batch
 cd d:\RAG
 rag_env\Scripts\activate.bat
-python -m uvicorn legal_dashboard:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn dashboard:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ---
@@ -90,14 +90,14 @@ npm run build
 ```batch
 1. cd d:\RAG
 2. rag_env\Scripts\activate.bat
-3. python -m uvicorn legal_dashboard:app --reload --host 127.0.0.1 --port 8000
+3. python -m uvicorn dashboard:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ### **Option B: Using PowerShell**
 ```powershell
 1. cd d:\RAG
 2. & .\rag_env\Scripts\Activate.ps1
-3. python -m uvicorn legal_dashboard:app --reload --host 127.0.0.1 --port 8000
+3. python -m uvicorn dashboard:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ### **Option C: Using CLI**

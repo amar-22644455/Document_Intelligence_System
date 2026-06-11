@@ -1,0 +1,11 @@
+.env
+node_modules/
+ui/node_modules/
+storage/
+embeddings/*.pkl
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.venv/
+rag_env/

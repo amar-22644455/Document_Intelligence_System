@@ -1,0 +1,37 @@
+1. What is CORS?
+Definition: CORS stands for Cross-Origin Resource Sharing. It is a browser-security feature that restricts how resources on a web page can be requested from another domain (origin) [00:05].
+
+The Problem it Solves: Without CORS, a malicious website open in one tab could theoretically make requests to your bank or social media (where you are logged in) in another tab, using your saved cookies to steal data or perform actions on your behalf
+
+A browser defines an "Origin" based on three components [07:15]:
+
+Scheme (e.g., http vs https)
+
+Host (e.g., google.com vs api.google.com)
+
+Port (e.g., :3000 vs :8000)
+
+If any of these differ, it is considered a Cross-Origin request.
+
+Note: Changing the path (e.g., /home vs /api) does not change the origin [08:02].
+
+
+How CORS Works (The Handshake)
+Request Header: When a client makes a cross-origin request, the browser automatically adds an Origin header (e.g., Origin: http://localhost:5173) [12:41].
+
+Response Header: For the request to succeed, the server must respond with a specific header: Access-Control-Allow-Origin [13:32].
+
+If the server returns Access-Control-Allow-Origin: * (asterisk), it allows any origin [20:43].
+
+For better security, servers should return the specific origin they trust [14:09].
+
+Key Implementation Details
+Browser Feature Only: CORS is implemented by the browser. Server-to-server calls (like those from Postman or Curl) do not face CORS issues because they don't share a browser environment where session cookies are stored [26:08].
+
+Simple vs. Pre-flight Requests:
+
+Simple (GET/POST): Standard requests go through directly, and the browser checks the response headers [12:27].
+
+Pre-flight (PUT/PATCH/DELETE): For non-standard methods, the browser sends an automated OPTIONS request first to see if the server permits the action before sending the actual data [23:53].
+
+CORS with Cookies: If you use credentials: 'include' to send cookies, you cannot use a wildcard (*) for the allow-origin header. You must explicitly list the trusted domain [22:22].

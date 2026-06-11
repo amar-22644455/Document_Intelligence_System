@@ -5,59 +5,58 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import json
-
-
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 load_dotenv()
 
 COMPARISON_PROMPT_TEMPLATE = """
-You are an expert Legal AI comparing two legal documents (e.g., Terms & Conditions, Contracts).
+You are an expert Document Intelligence AI performing a high-accuracy semantic comparison between two specific documents.
 
 You MUST return ONLY valid JSON. No extra text, no markdown block formatting.
 
 --------------------------------------------------
-STRICT RULES:
-1. TARGET PARAMETERS: Identify what the user is specifically asking to compare in the USER QUERY (e.g., refunds, liability, data sharing). Base your comparison strictly on those requested parameters.
-2. DEFAULT PARAMETERS: If the user's query is generic (e.g., "compare these documents" or "what is the difference"), you MUST evaluate and compare these core legal categories: 
-   - Data Privacy & Sharing
-   - Liability Limitations
-   - Payment & Refund Terms
-   - Cancellation & Termination Policies
-3. Use ONLY the provided context. Do NOT hallucinate external laws.
-4. If Document A has a clause but Document B does not, explicitly state "Not mentioned in Document B" (and vice versa).
+STRICT COMPARISON RULES:
+1. TARGET PARAMETERS: Identify what the user is specifically asking to compare in the USER QUERY. Base your comparison strictly on those requested parameters.
+2. DEFAULT PARAMETERS: If the query is generic, evaluate and compare these core categories:
+   - Purpose & Scope
+   - Key Information, Expertise & Insights
+   - Main Elements / Content / Requirements
+   - Technical or Operational Details
+   - Constraints, Gaps or Differences
+3. DO NOT use generic placeholders like "Document A" or "Document B" inside the text values of your JSON response (e.g. in "summary", "document_a", "document_b", "difference", "insights" explanation, "verdict", and "final_answer"). Instead, refer to {file_a} and {file_b} by their exact filenames.
+4. If {file_a} contains information that {file_b} does not, explicitly state "Not mentioned in {file_b}" (and vice versa).
 5. "evidence" MUST be an array of exact chunk labels (e.g., ["[DocA - Chunk 1]"]).
 6. ALWAYS follow the JSON format EXACTLY. DO NOT add explanations outside the JSON object.
+7. CITE YOUR SOURCES: If referencing specific locations in the documents, use simple page numbers (e.g. [Page X] or simply Page X) when applicable. Do NOT write raw filenames or technical labels like "- Chunk X" in the text fields of your JSON response. Focus on writing clean, natural, and human-readable text.
 
 --------------------------------------------------
 RETURN FORMAT (STRICT JSON):
 
 {{
-  "summary": "A concise overview of how the two documents differ fundamentally.",
+  "summary": "A concise overview of how {file_a} and {file_b} differ fundamentally.",
   "comparison": [
     {{
-      "category": "The specific parameter being compared (e.g., Refund Policy, Liability)",
-      "document_a": "Summary of Doc A's stance on this parameter",
-      "document_b": "Summary of Doc B's stance on this parameter",
-      "difference": "The exact material difference between them regarding this parameter"
+      "category": "The specific parameter being compared",
+      "document_a": "Summary of {file_a}'s information regarding this parameter",
+      "document_b": "Summary of {file_b}'s information regarding this parameter",
+      "difference": "The exact material difference between {file_a} and {file_b} regarding this parameter"
     }}
   ],
-  "risks": [
+  "insights": [
     {{
-      "risk": "Name of the risk (e.g., Unilateral Modification)",
-      "docA_severity": "Low | Medium | High | None",
-      "docB_severity": "Low | Medium | High | None",
-      "explanation": "Why this creates a liability or risk for the user",
+      "title": "Key insight or observation",
+      "explanation": "Why this difference or similarity matters between {file_a} and {file_b}",
       "evidence": ["exact chunk reference 1", "exact chunk reference 2"]
     }}
   ],
-  "verdict": "Clear, definitive statement on which document is overall riskier or more restrictive, and why.",
+  "verdict": "Clear and objective conclusion highlighting the major distinctions between {file_a} and {file_b}.",
   "final_answer": "Direct answer to the specific user query based on the comparison."
 }}
 
 --------------------------------------------------
-DOCUMENT A:
+DOCUMENT A ({file_a}):
 {context_a}
 
-DOCUMENT B:
+DOCUMENT B ({file_b}):
 {context_b}
 
 USER QUERY:
@@ -67,51 +66,49 @@ RETURN ONLY JSON:
 """
 
 
-LEGAL_PROMPT_TEMPLATE = """
-You are an expert Legal Risk Analysis AI conducting a strict audit of a legal document.
+DOCUMENT_INTELLIGENCE_PROMPT_TEMPLATE = """
+You are an advanced Document Intelligence AI designed for semantic search, document understanding, and context-grounded question answering.
 
 You MUST return ONLY valid JSON. No extra text, no markdown block formatting.
 
 --------------------------------------------------
 STRICT RULES:
-1. Use ONLY the provided context. DO NOT assume standard industry practices.
-2. If the answer is not in the context, output "Information not found in the provided text."
-3. Severity Guidelines: 
-   - High: Financial traps, severe privacy violations, loss of legal rights.
-   - Medium: Vague terms, difficult cancellation, aggressive data sharing.
-   - Low: Standard boilerplate but slightly skewed against the user.
-4. "evidence" MUST be an array of chunk labels (e.g., ["[Document - Chunk 2]"]).
-5. Output MUST be valid JSON.
+1. Use ONLY the provided context. DO NOT assume facts outside the document.
+2. If the answer is not present in the context, output:
+   "Information not found in the provided document."
+3. "evidence" MUST be an array of exact chunk labels
+   (e.g., ["[Document - Chunk 2]"]).
+4. Generate concise, accurate, and context-grounded responses.
+5. Output MUST always be valid JSON.
+6. CITE YOUR SOURCES: Do NOT output raw filenames or technical labels like "Chunk X" inside the generated text fields of your JSON response. If referencing locations in a PDF, use simple page numbers (e.g., [Page X]). Keep all text clean, professional, and reader-friendly.
 
 --------------------------------------------------
-FOCUS ON AUDITING FOR:
-- Data collection, selling, & sharing
-- Payment / subscription traps & Auto-renewals
-- Liability limitations & forced arbitration
-- Account suspension / unilateral termination
-- Hidden, vague, or predatory clauses
+FOCUS ON:
+- Semantic understanding of the document
+- Extracting key insights and important details
+- Identifying important constraints, responsibilities, or requirements
+- Summarizing complex information clearly
+- Answering user queries with source-grounded reasoning
 
 --------------------------------------------------
 RETURN FORMAT (STRICT JSON):
 
 {{
-  "summary": "Detailed, objective explanation of the document's overall intent and user obligations.",
-  "risks": [
+  "summary": "Detailed and objective summary of the document section relevant to the query.",
+  "key_insights": [
     {{
-      "title": "Clear, concise risk name",
-      "severity": "Low | Medium | High",
-      "explanation": "Detailed explanation of how this clause harms or limits the user",
-      "user_impact": "Direct real-world consequence for the user",
+      "title": "Key insight or topic",
+      "explanation": "Clear explanation of the insight",
       "evidence": ["chunk reference"]
     }}
   ],
-  "key_clauses": [
+  "relevant_sections": [
     {{
-      "clause_title": "e.g., Forced Arbitration",
-      "clause_summary": "What the clause actually dictates in plain English"
+      "section_title": "Relevant topic or section",
+      "section_summary": "Plain-English explanation of the section"
     }}
   ],
-  "final_answer": "Detailed, direct answer to the user query based solely on the text."
+  "final_answer": "Detailed and direct answer to the user query based solely on the document context."
 }}
 
 --------------------------------------------------
@@ -128,26 +125,28 @@ RETURN ONLY JSON:
 
 
 CHAT_PROMPT_TEMPLATE = """
-You are a helpful and precise AI answering user questions based strictly on the provided document context.
+You are a helpful and precise Document Intelligence AI answering user questions strictly based on the provided document context.
 
 You MUST return ONLY valid JSON. No extra text, no markdown block formatting.
 
 --------------------------------------------------
 STRICT RULES:
-1. Use ONLY the provided context. 
-2. If the context does not contain the answer, state: "The provided document does not contain information to answer this query."
-3. If the query is a simple factual question with no inherent risks, return an empty array [] for "risks".
-4. Be helpful, clear, and concise.
+1. Use ONLY the provided context.
+2. If the context does not contain the answer, state:
+   "The provided document does not contain information to answer this query."
+3. If there are no important observations or concerns, return an empty array [] for "insights".
+4. Be clear, concise, and context-grounded.
+5. CITE YOUR SOURCES: Do NOT output raw filenames or technical labels like "Chunk X" inside your final_answer text. If referencing locations in a PDF, use simple page numbers (e.g., [Page X]). Grounded sources will be displayed separately to the user, so focus on writing fluent, clean, and human-friendly sentences.
 
 --------------------------------------------------
 RETURN FORMAT (STRICT JSON):
 
 {{
-  "final_answer": "Your detailed, helpful answer to the user query.",
-  "risks": [
+  "final_answer": "Your detailed and helpful answer to the user query.",
+  "insights": [
     {{
-      "title": "Name of the risk (if applicable)",
-      "severity": "Low | Medium | High"
+      "title": "Important insight or observation",
+      "importance": "Low | Medium | High"
     }}
   ]
 }}
@@ -165,13 +164,14 @@ RETURN ONLY JSON:
 """
 
 class RAGPipeline:
-    def __init__(self, model="llama-3.1-8b-instant"):
-        self.retriever = Retriever()
+    def __init__(self, model="llama-3.1-8b-instant", embeddings_dir=None):
+        self.embeddings_dir = embeddings_dir or os.path.join(PROJECT_ROOT, "embeddings")
+        self.retriever = Retriever(self.embeddings_dir)
         self.model = model
 
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
-            raise ValueError("❌ GROQ_API_KEY not found in environment variables.")
+            raise ValueError("GROQ_API_KEY not found in environment variables.")
 
         self.client = OpenAI(
             api_key=api_key,
@@ -188,9 +188,9 @@ class RAGPipeline:
                 model=self.model,
                 response_format={"type": "json_object"},
                 messages=[
-                    {"role": "system", "content": "You are a strict legal AI. Output ONLY valid JSON."},
+                    {"role": "system", "content": "You are a strict Document Intelligence AI. Output ONLY valid JSON."},
                     {"role": "user", "content": prompt}
-                ],
+                  ],
                 temperature=0.2,
                 max_tokens=max_tokens,
             )
@@ -240,7 +240,7 @@ class RAGPipeline:
 
         context = self._build_context(results, target_file, max_chars=6000)
         
-        prompt = CHAT_PROMPT_TEMPLATE.format(context=context, query=query) if is_chat else LEGAL_PROMPT_TEMPLATE.format(context=context, query=query)
+        prompt = CHAT_PROMPT_TEMPLATE.format(context=context, query=query) if is_chat else DOCUMENT_INTELLIGENCE_PROMPT_TEMPLATE.format(context=context, query=query)
         
         answer_json = self._call_llm(prompt)
         
@@ -267,7 +267,13 @@ class RAGPipeline:
         context_a = self._build_context(results_a, file_a)
         context_b = self._build_context(results_b, file_b)
 
-        prompt = COMPARISON_PROMPT_TEMPLATE.format(context_a=context_a, context_b=context_b, query=query)
+        prompt = COMPARISON_PROMPT_TEMPLATE.format(
+            file_a=file_a,
+            file_b=file_b,
+            context_a=context_a,
+            context_b=context_b,
+            query=query
+        )
         
         answer_json = self._call_llm(prompt, max_tokens=1800)
 
@@ -288,26 +294,53 @@ class RAGPipeline:
         print(f"Generating standard summaries for {len(files)} files...")
         
         # We give the LLM a generic prompt to trigger a good overall summary
-        summary_query = "Provide a comprehensive summary of this document, extracting key clauses and outlining any potential risks to the user."
-        
+        summary_query = "Provide a comprehensive summary of this document, extracting key insights and outlining any potential risks or important constraints to the user."
         ui_summary_data = {}
-
         for file in files:
             if not file:
                 continue
                 
-            results = self.retriever.retrieve(summary_query, top_k, source_filter=file)
-            
+            # Chronological Context Blending
+            doc_info = self.retriever.document_data.get(file)
+            if doc_info:
+                chunks = doc_info["chunks"]
+                metadata = doc_info["metadata"]
+                
+                # Fetch first 3 chunks (introduction/context)
+                intro_chunks = []
+                for idx in range(min(3, len(chunks))):
+                    intro_chunks.append({
+                        "chunk": chunks[idx],
+                        "source": {**metadata[idx], "source": file},
+                        "score": 1.0
+                    })
+                
+                # Semantic search for top 12 chunks
+                semantic_results = self.retriever.retrieve(summary_query, top_k=12, source_filter=file)
+                
+                # Merge intro and semantic results, avoiding duplicate chunks
+                merged_results = intro_chunks.copy()
+                seen_chunks = set(c["chunk"] for c in intro_chunks)
+                for r in semantic_results:
+                    if r["chunk"] not in seen_chunks:
+                        merged_results.append(r)
+                        seen_chunks.add(r["chunk"])
+                
+                # Sort chronologically by chunk index
+                merged_results.sort(key=lambda x: x["source"].get("chunk_index", 0))
+                results = merged_results
+            else:
+                results = self.retriever.retrieve(summary_query, top_k=12, source_filter=file)
+
             if not results:
                 ui_summary_data[file] = {"answer": {"error": "No data found for summary."}, "sources": []}
                 continue
 
-            context = self._build_context(results, file)
-            prompt = LEGAL_PROMPT_TEMPLATE.format(context=context, query=summary_query)
+            context = self._build_context(results, file, max_chars=9000)
+            prompt = DOCUMENT_INTELLIGENCE_PROMPT_TEMPLATE.format(context=context, query=summary_query)
             
             ui_summary_data[file] = {
                 "answer": self._call_llm(prompt),
                 "sources": results
             }
-
         return ui_summary_data

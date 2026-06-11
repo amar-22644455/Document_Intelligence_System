@@ -6,13 +6,13 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-EMBEDDINGS_DIR = os.path.join(PROJECT_ROOT, "embeddings")
 
 class Retriever:
-    def __init__(self):
+    def __init__(self, embeddings_dir=None):
+        self.embeddings_dir = embeddings_dir or os.path.join(PROJECT_ROOT, "embeddings")
         try:
             # 🔄 LOAD THE NEW MASTER DICTIONARY
-            with open(os.path.join(EMBEDDINGS_DIR, "document_data.pkl"), "rb") as f:
+            with open(os.path.join(self.embeddings_dir, "document_data.pkl"), "rb") as f:
                 self.document_data = pickle.load(f)
         except FileNotFoundError as e:
             raise Exception(f"Embedding file not found. Run embeddings generation first: {str(e)}")
